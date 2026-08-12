@@ -37,29 +37,94 @@ class NotificationRepository {
             const numberDocument = limit * (page - 1)
             const result = await notificationModel.aggregate([
                   {
-                        $match: { notification_user_id: user_id }
+                        $match: {
+                              notification_user_id: user_id
+                        }
                   },
+
                   {
                         $unwind: '$notifications_message'
                   },
+
                   {
-                        $match: { 'notifications_message.notification_attribute.notification_type': type }
+                        $match: {
+                              'notifications_message.notification_attribute.notification_type': type
+                        }
                   },
+
                   {
-                        $sort: { 'notifications_message.notification_creation_time': -1 }
+                        $sort: {
+                              'notifications_message.notification_creation_time': -1
+                        }
                   },
-                  { $skip: numberDocument },
-                  { $limit: limit },
+
+                  {
+                        $skip: numberDocument
+                  },
+
+                  {
+                        $limit: limit
+                  },
+
+                  // Lookup người mua
+                  {
+                        $lookup: {
+                              from: 'users',
+
+                              localField:
+                                    'notifications_message.notification_attribute.user_buy_id',
+
+                              foreignField: '_id',
+
+                              as: 'buyer_info'
+                        }
+                  },
+
+                  // Lấy object đầu tiên thay vì array
+                  {
+                        $set: {
+                              buyer_info: {
+                                    $arrayElemAt: ['$buyer_info', 0]
+                              }
+                        }
+                  },
+
+                  // Chỉ lấy field cần thiết
+                  {
+                        $set: {
+                              'notifications_message.notification_attribute.buyer_info': {
+                                    _id: '$buyer_info._id',
+                                    fullName: '$buyer_info.fullName',
+                                    nickName: '$buyer_info.nickName',
+                                    avatar: '$buyer_info.avatar',
+                                    email: '$buyer_info.email'
+                              }
+                        }
+                  },
+
+                  {
+                        $unset: 'buyer_info'
+                  },
 
                   {
                         $group: {
                               _id: '$_id',
-                              notification_count: { $first: '$notification_count' },
-                              notification_user_id: { $first: '$notification_user_id' },
+
+                              notification_count: {
+                                    $first: '$notification_count'
+                              },
+
+                              notification_user_id: {
+                                    $first: '$notification_user_id'
+                              },
+
                               notifications_message: {
                                     $push: '$notifications_message'
                               },
-                              get: { $sum: 1 }
+
+                              get: {
+                                    $sum: 1
+                              }
                         }
                   }
             ])

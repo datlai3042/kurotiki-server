@@ -19,7 +19,6 @@ class NotificationService {
                   page,
                   type: type as NotificationType
             })
-
             return { notifications: result }
       }
 

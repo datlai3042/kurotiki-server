@@ -100,6 +100,7 @@ class AuthService {
             const { email, password } = req.body
             // found email
             const foundUser = await UserService.findUserByEmail({ email })
+            console.log({email, password, foundUser})
             if (!foundUser) throw new AuthFailedError({ detail: 'Đăng nhập thất bại, vui lòng nhập thông tin hợp lệ' })
             // match email with user._id
 

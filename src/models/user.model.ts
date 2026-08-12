@@ -86,7 +86,7 @@ export const userSchema = new Schema<UserDocument>(
             },
             avatar_url_default: {
                   type: String,
-                  default:'https://res.cloudinary.com/cloud304/image/upload/v1722613508/tiki-project/avatar-default.png'
+                  default: 'https://res.cloudinary.com/cloud304/image/upload/v1722613508/tiki-project/avatar-default.png'
             },
             avatar_used: {
                   type: [
@@ -106,6 +106,11 @@ export const userSchema = new Schema<UserDocument>(
                         {
                               address_text: { type: String, required: true },
                               address_street: { type: String, required: true },
+
+
+                              address_receiver_name: { type: String, required: true },
+                              address_receiver_tel: { type: String, required: true },
+                              address_email_vat: { type: String, required: true, default: '' },
                               address_ward: {
                                     type: {
                                           code: String,

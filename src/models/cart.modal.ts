@@ -1,22 +1,30 @@
-import { Document, ObjectId, Schema, Types, model } from 'mongoose'
+import { Document, Schema, Types, model } from 'mongoose'
 
 const DOCUMENT_NAME = 'Cart'
 const COLLECTION_NAME = 'carts'
 
 export type Address = {
+      address_receiver_name: string
+      address_receiver_tel: string
+      address_email_vat: string
+
       address_street: string
+
       address_ward: {
             code: string
             text: string
       }
+
       address_district: {
             code: string
             text: string
       }
+
       address_province: {
             code: string
             text: string
       }
+
       address_text: string
 
       type: 'Home' | 'Company' | 'Private'
@@ -28,7 +36,7 @@ export interface CartProduct {
       cart_state: 'active' | 'pending' | 'complete'
       cart_total: number
       quantity: number
-      price: number
+      product_price: number
       isSelect: boolean
       cart_date: Date
       cart_address: Address
@@ -39,7 +47,7 @@ export interface CartProductWithId {
       shop_id: Types.ObjectId
       product_id: Types.ObjectId
       cart_state: 'active' | 'pending' | 'complete'
-price: number,
+      product_price: number
       quantity: number
       new_quantity: number
       isSelect: boolean
@@ -49,7 +57,7 @@ price: number,
 
 interface CartModel {
       cart_user_id: Types.ObjectId
-      cart_products: Types.DocumentArray<CartProduct>
+      cart_products: Types.DocumentArray<CartProductDoc>
       cart_count_product: number
       cart_select_all: boolean
 }
@@ -57,61 +65,175 @@ interface CartModel {
 type CartModelDoc = CartModel & Document
 type CartProductDoc = CartProduct & Document
 
-const cartAdressSchema = new Schema({
-      address_street: { type: String, require: true },
-      address_ward: {
+const cartAdressSchema = new Schema(
+      {
+            address_receiver_name: {
+                  type: String,
+                  required: true,
+                  trim: true,
+                  maxlength: 50,
+            },
+
+            address_receiver_tel: {
+                  type: String,
+                  required: true,
+                  trim: true,
+                  match: [
+                        /^(0|\+84)[0-9]{9}$/,
+                        'Số điện thoại người nhận không đúng định dạng',
+                  ],
+            },
+
+            address_email_vat: {
+                  type: String,
+                  default: '',
+                  trim: true,
+                  lowercase: true,
+                  validate: {
+                        validator: (value: string) => {
+                              if (!value) return true
+
+                              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+                        },
+                        message: 'Email nhận VAT không đúng định dạng',
+                  },
+            },
+
+            address_street: {
+                  type: String,
+                  required: true,
+                  trim: true,
+            },
+
+            address_ward: {
+                  code: {
+                        type: String,
+                        required: true,
+                  },
+                  text: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                  },
+            },
+
+            address_district: {
+                  code: {
+                        type: String,
+                        required: true,
+                  },
+                  text: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                  },
+            },
+
+            address_province: {
+                  code: {
+                        type: String,
+                        required: true,
+                  },
+                  text: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                  },
+            },
+
+            address_text: {
+                  type: String,
+                  required: true,
+                  trim: true,
+            },
+
             type: {
-                  code: String,
-                  text: String
-            }
+                  type: String,
+                  enum: ['Home', 'Company', 'Private'],
+                  default: 'Home',
+                  required: true,
+            },
       },
-      address_district: {
-            type: {
-                  code: String,
-                  text: String
-            }
+      {
+            _id: false,
       },
-      address_province: {
-            type: {
-                  code: String,
-                  text: String
-            }
+)
+
+export const cartProductSchema = new Schema({
+      shop_id: {
+            type: Schema.Types.ObjectId,
+            ref: 'Shop',
+            required: true,
       },
-      address_text: { type: String, require: true },
 
-      type: { type: String, enum: ['Home', 'Company', 'Private'], default: 'Home' }
-})
+      product_id: {
+            type: Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true,
+      },
 
-export const cartProductSchema = new Schema<CartProductDoc>({
-      shop_id: { type: Schema.Types.ObjectId, ref: 'Shop', required: true },
+      cart_state: {
+            type: String,
+            enum: ['active', 'pending', 'complete'],
+            default: 'active',
+            required: true,
+      },
 
-      product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-      cart_state: { type: String, enum: ['active', 'pending', 'complete'], default: 'active', required: true },
-      quantity: { type: Number, require: true },
-      price: { type: Number, require: true },
+      quantity: {
+            type: Number,
+            required: true,
+            min: 1,
+      },
 
-      isSelect: { type: Boolean, default: false },
-      cart_address: cartAdressSchema,
-      cart_date: { type: Date, default: Date.now(), required: true }
+      product_price: {
+            type: Number,
+            required: true,
+            min: 0,
+      },
+
+      isSelect: {
+            type: Boolean,
+            default: false,
+      },
+
+      cart_address: {
+            type: cartAdressSchema,
+            required: false,
+      },
+
+      cart_date: {
+            type: Date,
+            default: Date.now,
+            required: true,
+      },
 })
 
 cartProductSchema.virtual('product', {
       ref: 'Product',
       localField: 'product_id',
       foreignField: '_id',
-      justOne: true
+      justOne: true,
 })
 
-const cartSchema = new Schema<CartModelDoc>({
+const cartSchema = new Schema({
       cart_user_id: {
             type: Schema.Types.ObjectId,
-            ref: 'User'
+            ref: 'User',
       },
-      cart_count_product: { type: Number, default: 0 },
-      cart_select_all: { type: Boolean, default: false },
-      cart_products: [cartProductSchema]
+
+      cart_count_product: {
+            type: Number,
+            default: 0,
+      },
+
+      cart_select_all: {
+            type: Boolean,
+            default: false,
+      },
+
+      cart_products: [cartProductSchema],
 })
 
-const cartModel = model<CartModelDoc>(DOCUMENT_NAME, cartSchema)
+const cartModel = model(DOCUMENT_NAME, cartSchema)
 
 export { cartModel, cartSchema }

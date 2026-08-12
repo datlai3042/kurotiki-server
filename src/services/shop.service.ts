@@ -94,9 +94,35 @@ class ShopService {
 
       static async getMyShop(req: IRequestCustom) {
             const { user } = req
-            const foundShop = await shopModel.findOne({ owner: user?._id })
-            if (!foundShop) throw new BadRequestError({ detail: 'Không tìm thấy Shop' })
-            return { shop: foundShop }
+
+            const [foundShop] = await shopModel.aggregate([
+                  {
+                        $match: {
+                              owner: new Types.ObjectId(user?._id)
+                        }
+                  },
+                  {
+                        $set: {
+                              shop_order_count: {
+                                    $size: {
+                                          $ifNull: ['$shop_order', []]
+                                    }
+                              }
+                        }
+                  },
+                  {
+                        $unset: 'shop_order'
+                  }
+            ])
+
+            if (!foundShop)
+                  throw new BadRequestError({
+                        detail: 'Không tìm thấy Shop'
+                  })
+
+            return {
+                  shop: foundShop
+            }
       }
 
       static async getProductMyShop(req: IRequestCustom) {
@@ -128,7 +154,8 @@ class ShopService {
                               product_thumb_image: 1,
                               product_votes: 1,
                               product_is_bought: 1,
-                              product_desc_image: 1
+                              product_desc_image: 1,
+                              product_available: 1
                         }
                   }
             })

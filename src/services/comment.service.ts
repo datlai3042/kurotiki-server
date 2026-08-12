@@ -208,7 +208,7 @@ class CommentService {
             const commentQuery = { comment_user_id: new Types.ObjectId(user?._id) }
             const commentPopulateUser = {
                   path: 'comment_user_id',
-                  select: { avatar: 1, nickName: 1, email: 1, fullName: 1, avatar_default_url: 1, createdAt: 1 }
+                  select: { avatar: 1, nickName: 1, email: 1, fullName: 1, avatar_url_default: 1, createdAt: 1 }
             }
 
             const commentPopulateProduct = {

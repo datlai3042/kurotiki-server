@@ -33,7 +33,7 @@ class CartService {
             }
 
             const userCart = await cartModel.findOne({ cart_user_id: new Types.ObjectId(user?._id) })
-
+            
             // const
 
             if (!userCart) {
@@ -59,7 +59,7 @@ class CartService {
 
                   const cart = await cartModel.findOneAndUpdate(query, update, option)
 
-                  return { cart }
+                  return { cart, user, product }
             }
 
             const query = { cart_user_id: new Types.ObjectId(user?._id), 'cart_products.product_id': product.product_id }
@@ -69,7 +69,7 @@ class CartService {
 
             const cart = await cartModel.findOneAndUpdate(query, update, option)
 
-            return { cart }
+            return { cart, user, product }
       }
 
       static async getCountProductCart(req: IRequestCustom) {
@@ -106,26 +106,72 @@ class CartService {
 
       static async changeQuantityProductCart(req: IRequestCustom) {
             const { user } = req
-            const { mode, quantity, product_id } = req.body
-            const query = { cart_user_id: new Types.ObjectId(user?._id), 'cart_products.product_id': product_id }
-            const option = { new: true, upsert: true }
-            if (mode === 'DECREASE') {
-                  const update = { $inc: { 'cart_products.$.quantity': quantity } }
-                  const result = await cartModel.findOneAndUpdate(query, update, option)
-                  const foundProduct = result?.cart_products.find((product) => product.product_id.toString() === product_id)
+            const { mode, quantity, product_id, cart_item_id } = req.body
 
-                  return { quantity: foundProduct?.quantity }
+
+            const userId = new Types.ObjectId(user?._id)
+            const productId = new Types.ObjectId(product_id)
+            const cartItemId = new Types.ObjectId(cart_item_id)
+
+            const query = {
+                  cart_user_id: userId,
+
+                  cart_products: {
+                        $elemMatch: {
+                              _id: cartItemId,
+                              product_id: productId,
+                        },
+                  },
+            }
+            // const query = { cart_user_id: new Types.ObjectId(user?._id), 'cart_products.product_id': product_id, 'cart_products._id': cart_item_id }
+            const option = { new: true, }
+            if (mode === 'DECREASE') {
+                  const result = await cartModel.findOneAndUpdate(
+                        {
+                              cart_user_id: userId,
+
+                              cart_products: {
+                                    $elemMatch: {
+                                          _id: cartItemId,
+                                          product_id: productId,
+                                          quantity: {
+                                                $gt: 1,
+                                          },
+                                    },
+                              },
+                        },
+                        {
+                              $inc: {
+                                    'cart_products.$.quantity': -1,
+                              },
+                        },
+                        {
+                              new: true,
+                        },
+                  )
+
+                  if (!result) {
+                        return {
+                              quantity: 1,
+                        }
+                  }
+
+                  const foundProduct = result.cart_products.id(cartItemId)
+
+                  return {
+                        quantity: foundProduct?.quantity,
+                  }
             }
             if (mode === 'INCREASE') {
                   const update = { $inc: { 'cart_products.$.quantity': quantity } }
                   const result = await cartModel.findOneAndUpdate(query, update, option)
-                  const foundProduct = result?.cart_products.find((product) => product.product_id.toString() === product_id)
+                  const foundProduct = result?.cart_products.find((product) => product.product_id.toString() === product_id && cart_item_id === product._id?.toString())
                   return { quantity: foundProduct?.quantity }
             }
             if (mode === 'INPUT') {
                   const update = { $set: { 'cart_products.$.quantity': quantity } }
                   const result = await cartModel.findOneAndUpdate(query, update, option)
-                  const foundProduct = result?.cart_products.find((product) => product.product_id.toString() === product_id)
+                  const foundProduct = result?.cart_products.find((product) => product.product_id.toString() === product_id && cart_item_id === product._id?.toString())
 
                   return { quantity: foundProduct?.quantity }
             }

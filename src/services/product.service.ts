@@ -214,7 +214,7 @@ class ProductService {
 
             const products = await productModel
                   .find(productQuery)
-                  .select({ _id: 1, product_name: 1, product_price: 1, product_thumb_image: 1, product_votes: 1 })
+                  .select({ _id: 1, product_name: 1, product_price: 1, product_thumb_image: 1, product_votes: 1, product_is_bought: 1 })
                   .limit(35)
 
             return { products }
@@ -230,7 +230,7 @@ class ProductService {
                   .find({})
                   .limit(LIMIT)
                   .sort({ product_is_bought: -1 })
-                  .select({ _id: 1, product_name: 1, product_price: 1, product_thumb_image: 1, product_votes: 1 })
+                  .select({ _id: 1, product_name: 1, product_price: 1, product_thumb_image: 1, product_votes: 1, product_is_bought: 1 })
             return { products }
       }
 

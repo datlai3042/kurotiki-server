@@ -30,7 +30,7 @@ class AccountService {
             const { user } = req
             const update = await userModel.findOneAndUpdate(
                   { _id: user?._id },
-                  { $set: { bob: req.body.birth, gender: req.body.gender, fullName: req.body.fullName, nickName: req.body.nickName } },
+                  { $set: { bob: req.body.birth, gender: req.body.gender, fullName: req.body.fullName, nickName: req.body.nickName, user_address: req.body.user_address || user?.user_address } },
                   { new: true, upsert: true }
             )
 

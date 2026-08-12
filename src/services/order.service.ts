@@ -106,6 +106,7 @@ class OrderService {
                                           message: `Mua thành công sản phẩm `,
                                           product_name: product_info[index].product_name,
                                           product_quantity: product_info[index].product_quantity,
+
                                           order_id: elementLast!._id as Types.ObjectId
                                     })
                               ]
@@ -202,7 +203,10 @@ class OrderService {
                   .findOne(query)
                   // .select({ 'orders.products.products.product_id': 1 })
                   .populate({ path: 'order_products.products.product_id' })
-                  .populate({ path: 'order_products.products.shop_id' })
+                  .populate({
+                        path: 'order_products.products.shop_id',
+                        select: '_id shop_name ',
+                  })
 
                   .lean()
 
@@ -212,7 +216,11 @@ class OrderService {
                   }
                   return null
             })
-            return { getOrderInfo: orderInfo }
+            return {
+                  getOrderInfo: {
+                        order_products: orderInfo,
+                  }
+            }
       }
 }
 
